@@ -16,11 +16,13 @@ resources/           - Resource content files for inclusion in DevHub
 └── community-tools  - Community tools collection resources
 
 ```
+## Quick and dirty local testing:
 
-## Deployment
+ * Won't look like Devhub, but can be used to test markdown rendering.  
+ * Assumes `podman` is available.
+ * Hot reloading works out of the box.
+ * Run `chmod +x startup.sh && ./startup.sh` the first time, and `./startup.sh` thereafter.
 
-* Developer Workstation Requirements/Setup
-* Application Specific Setup
 
 ## Deployment
 
