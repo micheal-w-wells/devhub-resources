@@ -13,17 +13,19 @@ pageOnly: true
 
 ## AI Tooling: Permission Defaults
 
-> Detailed guidance for [AI Tooling Security Requirements](../AI-tooling-security-requirements.md). Start there for the short version.
+!!! abstract "On this page"
+    How to keep Default Approvals from prompting you on every safe action (auto-approve read-only commands, keep prompting for the risky ones), and why Bypass Approvals and Autopilot are disabled. For the short version, start with [AI Tooling Security Requirements](../AI-tooling-security-requirements.md).
 
 ## Why Autopilot and Bypass Approvals are turned off
 
-VS Code offers three permission levels: **Default Approvals**, **Bypass Approvals**, and **Autopilot**. Bypass Approvals and Autopilot auto-approve *every* tool call — file edits, terminal commands, and external tool calls — without asking, and Autopilot also auto-answers the agent's own questions so it keeps running on its own. A single global bypass means the agent never pauses to let you catch a destructive command, a data leak, or a prompt-injection payload.
+VS Code offers three permission levels: Default Approvals, Bypass Approvals, and Autopilot. Bypass Approvals and Autopilot auto-approve *every* tool call (file edits, terminal commands, and external tool calls) without asking, and Autopilot also auto-answers the agent's own questions so it keeps running on its own. A single global bypass means the agent never pauses to let you catch a destructive command, a data leak, or a prompt-injection payload.
 
-Because of that, B.C. government-managed environments disable Bypass Approvals and Autopilot. Keep sessions on **Default Approvals**, which respects the finer-grained approval settings below.
+!!! danger "Enforced control"
+    In B.C. government-managed environments, Bypass Approvals and Autopilot are disabled centrally; you cannot turn them on. Keep sessions on Default Approvals, which respects the finer-grained approval settings below. If you find you *can* enable them, your environment may not be managed yet, so report it rather than using them.
 
 ## Don't get prompted to death
 
-Manual approval only works if you actually read the prompts. If everything asks, developers approve reflexively and the protection is lost. The fix is not to bypass approvals globally — it is to **auto-approve the safe, read-only things** and keep prompting for the risky ones.
+Manual approval only works if you actually read the prompts. If everything asks, developers approve reflexively and the protection is lost. Rather than bypassing approvals globally, auto-approve the safe, read-only things and keep prompting for the risky ones.
 
 Commit the block below as `.vscode/settings.json` in your repository so every contributor gets the same defaults:
 
@@ -61,7 +63,7 @@ Commit the block below as `.vscode/settings.json` in your repository so every co
 }
 ```
 
-Adjust the allow list to your stack, but keep the deny (`false`) entries — package scripts, cloud and cluster tools, database clients, and network fetches are executable authority and should always prompt. Some related settings (`chat.agent.sandbox.enabled`, `chat.tools.terminal.enableAutoApprove`, `chat.tools.eligibleForAutoApproval`, and the network-filter settings) are managed centrally by the organization; your repository settings layer on top.
+Adjust the allow list to your stack, but keep the deny (`false`) entries: package scripts, cloud and cluster tools, database clients, and network fetches are executable authority and should always prompt. Some related settings (`chat.agent.sandbox.enabled`, `chat.tools.terminal.enableAutoApprove`, `chat.tools.eligibleForAutoApproval`, and the network-filter settings) are managed centrally by the organization; your repository settings layer on top.
 
 ## Suggested permission baseline
 
