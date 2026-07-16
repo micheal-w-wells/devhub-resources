@@ -73,9 +73,9 @@ Modes decide how much of that surface is live. Built-in chat modes differ in cap
 
 Custom agents go further. A custom agent is a saved definition (for example a `*.agent.md` or chat-mode file) that can pin a model and explicitly *allow or deny specific tools*, so you can build a read-only "reviewer" agent that can search and read but cannot run the terminal, or a delivery agent limited to a single toolset. Treat a custom agent's tool allowlist as a security boundary, and review a shared or third-party custom agent like any other component in this list. This is also the clean way to give an agent access to a privileged system without handing it a raw credential: expose a narrow, purpose-built tool or MCP server that holds its own scoped credential, and allow the agent only that tool (see [Contain the agent](containment.md#prefer-no-credential-then-a-mediated-tool-then-a-scoped-identity)).
 
-## MCP servers: understand the real risks
+## MCP servers: understand the risks
 
-It is tempting to think of an MCP server as just a machine-readable API definition. It is more than that, and the difference matters for security.
+An MCP server does more than describe an API: it participates directly in a session, and that is what makes it a security concern.
 
 An MCP setup has three parts: the host (your AI application), the client (which talks to the server), and the server (which provides tools, resources, and prompts). The server can be hosted locally (a process on your machine, usually over stdio) or hosted externally (a remote service over HTTP). Either way, the server sees whatever context and tool arguments the agent sends it, and whatever it returns flows back into the model's context.
 
@@ -86,10 +86,10 @@ That makes an MCP server a trusted, powerful intermediary, not a passive API. Th
 - Prompt injection via results: tool responses are inserted into the model context and can carry instructions that steer the agent.
 - Rug pulls: a remote server can change its tool definitions or behaviour after you approved it.
 - Tool shadowing / name collisions in multi-server setups: one server overrides or intercepts another server's tools. This is where a genuine man-in-the-middle *between the agent and a legitimate tool* can occur.
-- Network interception: for remote (HTTP) servers, a classic network man-in-the-middle is possible if TLS certificates are not validated. This is the case where the "MITM" framing applies most literally.
+- Network interception: for remote (HTTP) servers, a classic network man-in-the-middle is possible if TLS certificates are not validated.
 - Over-broad credentials: a server handed a wide token can act well beyond the task.
 
-So the "MCP as man-in-the-middle" intuition is partly right (literally for un-validated remote transports and for tool-shadowing between servers), but the broader, more common danger is simply that the server is a trusted endpoint that can both exfiltrate and inject.
+Only network interception and tool shadowing are literally man-in-the-middle attacks. The more common danger is broader: a trusted endpoint that can both exfiltrate data and inject instructions.
 
 Adopt an MCP server only when every box is checked:
 
