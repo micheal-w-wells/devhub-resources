@@ -1,6 +1,6 @@
 ---
 description: A practical guide to AI tooling for developers.
-title: AI Tooling for Developers
+title: AI tooling for developers
 resourceType: Documentation
 tags:
   - Developer Guide
@@ -10,40 +10,65 @@ personas:
 pageOnly: true
 ---
 
-## AI Tooling for Developers
+# AI tooling for developers
 
-This page contains information related to AI tooling available to developers, including an overview of what is available, how to get access, as well as guidelines and recommendations.  You can also find links to additional BC Gov developed resources (e.g., Agent Skills), as well a playbook of proven examples.
+Explore the AI tools available to developers in the B.C. government. Learn what tools you can use, how to get access and the guidelines and recommendations that support their use. You'll also find links to B.C. government resources such as Agent Skills, along with a playbook that highlights proven examples.
 
-## Getting Started
+## Getting started
 
-### What tools are available?
+### Tools available
+
+Use the tools and services below to support AI-assisted development in the B.C. government.
 
 - AI coding assistants + agent capabilities:
   - [Github Copilot](https://docs.github.com/en/copilot/get-started/what-is-github-copilot)
-  - [Directory of MCP's](https://doesnt_exist_yet)
+  <!-- UPDATE WHEN AVAILABLE
+  - [Directory of MCP's](https://doesnt_exist_yet) Update when available 
+  -->
 - AI Services Hub
 
-### Mandatory Reading
+### Mandatory reading
 
-- All developers looking to use AI tooling in their developement and/or applications should start with a review of [AI Tooling Security Requirements](AI-tooling-security-requirements.md) and the [General Guidelines for AI Assisted Development](General-guidelines-for-AI-assisted-development.md) Included are considerations for suitability for your use case.
+Before you use AI tools for development or in an application, review the following resources. They outline security requirements, general guidance and considerations to help you determine whether AI is suitable for your use case.
 
-## Access, licensing, and setup
+- [AI tooling security requirements](AI-tooling-security-requirements.md)
+- [General guidelines for AI-assisted development](General-guidelines-for-AI-assisted-development.md)
 
-- After reviewing the guidelines, and with support from your supervisor / product team lead please submit a ticket ___here___ to get access to Github Copilot.
-- For the AI Services hub, please see __this___.
-- Please follow the setup instructions from the tool providor for workstation setup (e.g., Github.com Copilot documentation).
-- Who do I contact if access or setup fails?
-  - For coding assistants / agent providers (e.g., Github Copilot) reachout to email_to_be_created@gov.bc.ca
-  - For AI Services Hub, please contact to email_to_be_pasted_here@gov.bc.ca
+### Access, licensing and setup
 
+After you review the mandatory reading and confirm your need for AI tools with your supervisor or product team lead, follow the steps below to get access and set up the tools you need.
 
-### Training Resources
+<!-- UPDATE WHEN AVAILABLE
+- Submit a ticket ___here___ to request access to GitHub Copilot
+- For information about accessing AI Services Hub, see ___this___ 
+-->
+- Follow the setup instructions provided by each tool vendor (for example, the GitHub Copilot documentation)
 
-- Where can I find beginner-friendly learning resources?
-  - Github Copilot:
-    - [Quickstart Guide](https://docs.github.com/en/copilot/get-started/quickstart)
-    - [Github Copilot Docs](https://docs.github.com/en/copilot)
-    - [Github Youtube: Github Copilot For Beginners Playlist](https://www.youtube.com/watch?v=n0NlxUyA7FI&list=PL0lo9MOBetEFc6rN_y9-YKA3plCSUb1NP)
-    - [Github Youtube: Github Copilot CLI for Beginners Playlist](https://www.youtube.com/watch?v=BDxRhhs36ns&list=PL0lo9MOBetEHvO-spzKBAITkkTqv4RvNl)
-    - On usage:  Note that for Github Copilot, currently the only way to view your available token budget is within your Github Copilot Settings on Github.com.  In the future there will be more granular stats made available (i.e. by model usage per user).  There is additional notes on 'picking the right model for the job' in the [AI Tooling Guidelines and Security Requirements](AI-tooling-guidelines-and-security-requirements.md)
-  - AI Services Hub
+### Help available
+
+Contact the appropriate team if you have issues with access or setup:
+
+<!-- UPDATE WHEN AVAILABLE
+- For coding assistants and agent providers (such as GitHub Copilot), contact email_to_be_created@gov.bc.ca
+- For AI Services Hub, contact email_to_be_pasted_here@gov.bc.ca
+-->
+
+### Training resources
+
+Use the resources below to learn the basics, explore advanced features and get the most value from the AI tools available to you. 
+
+#### GitHub Copilot
+
+- [Quickstart Guide](https://docslot/get-started/quickstart
+- [Github Copilot docs](https://docs.github.com/en/copilot)
+- [GitHub Copilot for beginners playlist](https://www.youtube.com/watch?v=n0NlxUyA7FI&list=PL0lo9MOBetEFc6rN_y9-YKA3plCSUb1NP)
+- [Github Youtube: Github Copilot CLI for beginners playlist](https://www.youtube.com/watch?v=BDxRhhs36ns&list=PL0lo9MOBetEHvO-spzKBAITkkTqv4RvNl)
+
+- View your available token budget in your GitHub Copilot settings on GitHub.com
+- More detailed usage metrics, such as model usage by user, are expected to be available in the future
+- For guidance on selecting the right model for your use case, see the [AI tooling guidelines and security requirements](AI-tooling-guidelines-and-security-requirements.md)
+
+#### AI Services Hub
+<!-- UPDATE WHEN AVAILABLE
+- AI Services Hub
+-->
