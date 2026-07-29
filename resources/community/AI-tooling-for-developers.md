@@ -25,7 +25,7 @@ This page contains information related to AI tooling available to developers, in
 
 ### Mandatory Reading
 
-- All developers looking to use AI tooling in their developement and/or applications should start with a review of [AI Tooling Security Requirements](AI-tooling-security-requirements.md) and the [General Guidelines for AI Assisted Development](General-guidelines-for-AI-assisted-development.md) Included are considerations for suitability for your use case.
+- All developers looking to use AI tooling in their developement and/or applications should start with a review of [AI Tooling Security Requirements](AI-tooling-security-requirements.md) and the [General Guidelines for AI-Assisted Development](General-guidelines-for-AI-assisted-development.md) Included are considerations for suitability for your use case.
 
 ## Access, licensing, and setup
 
