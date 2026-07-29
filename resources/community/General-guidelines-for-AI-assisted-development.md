@@ -1,6 +1,6 @@
 ---
 description: Guidelines for general workflows and human-in-the-loop (HITL) expectations for developers using AI tooling and coding agents.
-title: General Guidelines for AI Assisted Development
+title: General Guidelines for AI-Assisted Development
 resourceType: Documentation
 tags:
   - Developer Guide
@@ -17,7 +17,7 @@ pageOnly: true
 !!! info "These guidelines can change with the tooling"
     AI development tools change quickly. When the approved-tool catalogue or the standard setup differs from an example in this guide, follow the catalogue.
 
-This page lays out guidelines for general workflows and human-in-the-loop (HITL) expectations for developers using AI tools in B.C. Government software development. For mandatory information security rules, see [AI Tooling Security Requirements](AI-tooling-security-requirements.md).
+This page lays out guidelines for general workflows and human-in-the-loop (HITL) expectations for technical staff using AI tools in BC Gov software development. For mandatory information security rules, see [AI Tooling Security Requirements](AI-tooling-security-requirements.md).
 
 ---
 
@@ -25,10 +25,10 @@ This page lays out guidelines for general workflows and human-in-the-loop (HITL)
 
 ### Core Principle: Accountability Remains Human
 
-AI tools are assistants, not software engineers. In B.C. Government development, **the developer who accepts and commits an AI suggestion assumes full responsibility for that code.**
+AI tools are assistants, not software engineers. In BC Gov development, **the developer who accepts and commits an AI suggestion assumes full responsibility for that code.**
 
-- For any AI generated code, treat it with the same scrutiny as a pull request from a junior developer or a code snippet found from a third party source.
-- **AI reviews do not replace human review**, automated AI code reviewers and security bots do not count toward mandatory human peer review or `CODEOWNERS` pull request approvals.
+- For any AI-generated code, treat it with the same scrutiny as a pull request from a junior developer or a code snippet found from a third party source.
+- **AI reviews do not replace human review.** Automated AI code reviewers and security bots do not count toward mandatory human peer review or `CODEOWNERS` pull request approvals.
 
 See [AI Tooling: Reviewing AI-Assisted Work](ai-tooling-security/reviewing.md) for more information on other requirements for reviewing and testing AI output.
 
@@ -36,12 +36,12 @@ See [AI Tooling: Reviewing AI-Assisted Work](ai-tooling-security/reviewing.md) f
 
 ### The "Comprehend, Verify, Validate, Refactor" Loop
 
-Developers must ensure that their AI usage does not degrade the software/system quality. Looping through these four steps before accepting and/or committing AI generated code will maintain quality developer output:
+You are responsible for ensuring that your AI usage does not degrade software or system quality. Loop through these four steps before accepting and/or committing AI-generated code.
 
 1. **Comprehend** the output. Never accept multi-line suggestions or tab-completions without reading every line. If you cannot explain how the generated block works to a peer, do not commit it.
-2. **Verify** the output. AI models suffer from training cut-offs and can hallucinate functions, endpoints, or SDK methods that do not exist or are deprecated. Provide the model with current documentation, sources, and/or MCP Servers to improve the AI's output. Ask the model to link, provide, or direct you to the documentation/source so you can verify and look at it for yourself to verify.
+2. **Verify** the output. AI models suffer from training cut-offs and can hallucinate functions, endpoints, or SDK methods that do not exist or are deprecated. Provide the model with current documentation, sources, and/or MCP Servers to improve the AI's output. Do not blindly trust citations. Ask the model to link, provide, or direct you to the documentation source so you can verify it yourself.
 3. **Validate** the output. AI models tend to fail at edge cases. **DO NOT** assume the provided code is correct because it runs with no errors. You must validate generated code through execution **AND** writing deterministic tests to verify the AI's code/logic.
-4. **Refactor** the final output. AI often writes working but verbose or unconventional code. Refactor suggestions for readability and to align with B.C. Government coding standards, design systems, and/or your team's established patterns.
+4. **Refactor** the final output. AI often writes working but verbose or unconventional code. Refactor suggestions for readability and to align with BC Gov coding standards, design systems, and/or your team's established patterns.
 
 ---
 
@@ -59,11 +59,11 @@ AI models excel at tactical, local problem solving but usually lack overarching 
 
 #### Architectural Cohesion
 
-Ensure AI suggestions do not introduce divergent patterns (such as conflicting database connection strategies or logging frameworks) that break existing service design.
+You must ensure AI suggestions do not introduce divergent patterns (such as conflicting database connection strategies or logging frameworks) that break existing service design.
 
 #### Accessibility
 
-When generating front end code/components, manually verify that output complies with B.C. Government web accessibility standards ([WCAG](https://digital.gov.bc.ca/design/wcag/)). AI tools frequently omit ARIA labels, semantic HTML tags, or keyboard navigation requirements but can excel at complying with it once given a standard to follow.
+When generating front end code/components, manually verify that output complies with B.C. government web accessibility standards ([WCAG](https://digital.gov.bc.ca/design/wcag/)). AI tools frequently omit ARIA labels, semantic HTML tags, or keyboard navigation requirements. You should explicitly ask the AI to comply with a given standard, as it is generally excellent at it when directed.
 
 #### Bias and Inclusivity
 
@@ -73,7 +73,7 @@ AI models reflect biases present in their training data. When generating user fa
 
 ### HITL Checkpoints (When to Pause and Elevate)
 
-**DO NOT** rely solely on AI when working in high stake areas. You can use AI tools to brainstorm and draft solutions, but ensure there is still a rigorous human architectural design and peer review process. This is not an exhaustive list, some teams may have other high stake areas of development:
+**DO NOT** rely solely on AI when working in high-stake areas. You can use AI tools to brainstorm and draft solutions, but ensure there is still a rigorous human architectural design and peer review process. This is not an exhaustive list, some teams may have other high stake areas of development:
 
 - Authentication, authorization, and session management logic.
 - Financial transactions, billing, or payment processing workflows.
@@ -83,27 +83,27 @@ AI models reflect biases present in their training data. When generating user fa
 
 ---
 
-### HITL Safeguards ("Gotchas")
+### Common AI Pitfalls & Anti-Patterns
 
 #### Input Sanitization (Sanitize Before You Synthesize)
 
-HITL applies to your inputs as much as your outputs. Before pasting error logs, stack traces, database schemas, or API payloads into an AI prompt for debugging, you must manually redact all credentials, session tokens, internal IP addresses, and personal information. For full guidelines on handling information for AI consumption see [Practical handling guide](ai-tooling-security/information.md#practical-handling-guide) in Information and Classification.
+HITL applies to your inputs as much as your outputs. You are responsible for manually redacting all credentials, session tokens, internal IP addresses, and personal information prior to pasting error logs, stack traces, database schemas, or API payloads into an AI prompt. For full guidelines on handling information for AI consumption, see the [Practical handling guide](ai-tooling-security/information.md#practical-handling-guide) in Information and Classification.
 
 #### Dependency Hallucinations
 
-Never blindly run install commands for dependencies suggested by AI. AI models frequently hallucinate dependencies that do not exist. Attackers actively monitor these hallucinations and register the fake names with malicious payloads (a technique known as "slopsquatting"). Manually confirm the package name exists in official registries, is actively maintained, and complies with B.C. Government licensing requirements.
+Never blindly run install commands for dependencies suggested by AI. AI models frequently hallucinate dependencies that do not exist. Attackers actively monitor these hallucinations and register the fake names with malicious payloads (a technique known as "slopsquatting"). Manually confirm the package name exists in official registries, is actively maintained, and complies with B.C. government licensing requirements.
 
-#### Pitfalls in AI Generated Tests
+#### Pitfalls in AI-Generated Tests
 
-Inspect AI written tests to ensure they assert expected business logic and boundary conditions. AI likes to overuse mocks and/or only testing happy paths. Beware of tautological testing, where the AI writes tests that assert its own incorrect logic rather than testing the actual business requirement.
+Inspect AI written tests to ensure they assert expected business logic and boundary conditions. AI tends to overuse mocks and/or only testing happy paths. Beware of tautological testing, where the AI writes tests that assert its own incorrect logic rather than testing the actual business requirement.
 
 #### Performance and Scalability Blindspots
 
-Pay special attention to complex loops or data transformation logic where AI generated code inefficiencies (like $O(n^2)$ loops or N+1 database queries) could cause production blips or outages at scale. Even if an AI model implements code that functions locally, that doesn't mean it has/understands the context of your production environment's scale.
+You are responsible for ensuring that the code and logic functions within the context of your production environment, as an AI model will not necessarily know the extra business domain context to properly design the appropriate outcome. Pay special attention to inefficiencies such as nested loops with polynomial slowdowns or making repetitive database requests that could cause issues in production.
 
 #### Documentation and Git History
 
-AI will confidently hallucinate technical trade-offs or document features that were not actually included in your commit when generating PR summaries, commit messages, and inline code documentation. This will cause a gradual degrading of the repository's historical and source code truth over time. Read and verify every word.
+AI will confidently hallucinate technical trade-offs or document features that were not actually included in your commit when generating PR summaries, commit messages, and inline code documentation. This will gradually reduce the quality and precision of the repository's historical decisions and source code truth over time. Read and verify every word.
 
 !!! note "Skills, Instructions, and MCP Servers"
     Some of these guidelines can be partially or fully mitigated with the use of skills, instructions, and MCP servers. Make sure to follow security guidelines and use BC gov approved extensions.
