@@ -17,7 +17,7 @@ pageOnly: true
 !!! info "These guidelines can change with the tooling"
     AI development tools change quickly. When the approved-tool catalogue or the standard setup differs from an example in this guide, follow the catalogue.
 
-This page lays out guidelines for general workflows and human-in-the-loop (HITL) expectations for technical staff using AI tools in BC Gov software development. For mandatory information security rules, see [AI Tooling Security Requirements](AI-tooling-security-requirements.md).
+This page lays out guidelines for general workflows and human-in-the-loop (HITL) expectations for technical staff using AI tools in BC Gov software development. For mandatory information security rules, see [AI Tooling Security Guidelines and Requirements](AI-tooling-security-requirements.md).
 
 ---
 

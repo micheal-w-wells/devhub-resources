@@ -1,6 +1,6 @@
 ---
-description: Guidelines and security requirements for developers using AI tooling and coding agents.
-title: AI Tooling Guidelines and Security Requirements
+description: Security guidelines and requirements for developers using AI tooling and coding agents.
+title: AI Tooling Security Guidelines and Requirements
 resourceType: Documentation
 tags:
   - Developer Guide
@@ -12,7 +12,7 @@ personas:
 pageOnly: true
 ---
 
-## AI Tooling Security Requirements
+## AI Tooling Security Guidelines and Requirements
 
 !!! info "This guide changes with the tooling"
     AI development tools change quickly. When the approved-tool catalogue or the standard setup differs from an example in this guide, follow the catalogue.
