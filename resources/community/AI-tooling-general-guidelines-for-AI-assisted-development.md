@@ -1,6 +1,6 @@
 ---
 description: Guidelines for general workflows and human-in-the-loop (HITL) expectations for developers using AI tooling and coding agents.
-title: General Guidelines for AI-Assisted Development
+title: General guidelines for AI-assisted development
 resourceType: Documentation
 tags:
   - Developer Guide
@@ -12,7 +12,7 @@ personas:
 pageOnly: true
 ---
 
-## General Guidelines
+## General guidelines
 
 !!! info "These guidelines can change with the tooling"
     AI development tools change quickly. When the approved-tool catalogue or the standard setup differs from an example in this guide, follow the catalogue.
