@@ -1,6 +1,6 @@
 ---
 description: Why Autopilot and bypass modes are disabled, and how to set permission defaults so you are not prompted for every safe action.
-title: 'AI Tooling: Permission Defaults'
+title: 'AI tooling: Permission defaults'
 resourceType: Documentation
 tags:
   - Developer Guide
@@ -11,23 +11,37 @@ personas:
 pageOnly: true
 ---
 
-## AI Tooling: Permission Defaults
+## AI tooling: Permission defaults
 
-!!! abstract "On this page"
-    How to keep Default Approvals from prompting you on every safe action (auto-approve read-only commands, keep prompting for the risky ones), and why Bypass Approvals and Autopilot are disabled. For the short version, start with [AI Tooling Security Requirements](../AI-tooling-security-requirements.md).
+Learn how to reduce unnecessary approval prompts while keeping approval requirements for higher-risk actions. This page also explains why Bypass Approvals and Autopilot are disabled. For a shorter overview, start with [AI tooling security requirements](../AI-tooling-security-requirements.md).
+
 
 ## Why Autopilot and Bypass Approvals are turned off
 
-VS Code offers three permission levels: Default Approvals, Bypass Approvals, and Autopilot. Bypass Approvals and Autopilot auto-approve *every* tool call (file edits, terminal commands, and external tool calls) without asking, and Autopilot also auto-answers the agent's own questions so it keeps running on its own. A single global bypass means the agent never pauses to let you catch a destructive command, a data leak, or a prompt-injection payload.
+Virtual Studio Code (VS Code) provides controls that determine how much an agent can do without asking for your approval.
+
+With **Default Approvals**, VS Code follows your configured approval settings and asks you to review actions that require approval.
+
+**Bypass Approvals** automatically approves tool callls instead of showing confirmation prompts. 
+
+**Autopilot** goes further. It automatically approves tool calls, retries when errors occur and can respond to blocking questions so the agent can continue working without waiting for you. 
+
+Bypass Approvals and Autopilot can therefore allow file edits, terminal commands and external tool calls to run without manual review. Autopilot can also auto-answer the agent's own questions so it keeps running on its own. A single global bypass means the agent never pauses to let you catch a destructive command, a data leak or a prompt-injection payload.
 
 !!! danger "Enforced control"
-    In B.C. government-managed environments, Bypass Approvals and Autopilot are disabled centrally; you cannot turn them on. Keep sessions on Default Approvals, which respects the finer-grained approval settings below. If you find you *can* enable them, your environment may not be managed yet, so report it rather than using them.
+    In B.C. government-managed environments, Bypass Approvals and Autopilot are disabled centrally and must not be enabled. Keep sessions on Default Approvals so the configured approval controls remain in effect.
+    
+    If you can enable Bypass Approvals or Autopilot in a managed environment, report it immediately rather than using it.
 
-## Don't get prompted to death
+## Reduce unnecessary approval prompts
 
-Manual approval only works if you actually read the prompts. If everything asks, developers approve reflexively and the protection is lost. Rather than bypassing approvals globally, auto-approve the safe, read-only things and keep prompting for the risky ones.
+Approval prompts are useful only when developers review them before allowing an action. 
 
-Commit the block below as `.vscode/settings.json` in your repository so every contributor gets the same defaults:
+If too many low-risk actions require approval, developers may start approving prompts without reviewing them carefully. Instead of bypassing approvals, use Default Approvals with sandboxing and narrowly scoped approval rules. Require approval for actions that can change repository state, access external systems or use privileged tools.
+
+Where appropriate, commit repository specific settings in `.vscode/settings.json` so every contributor use consistent defaults.
+
+For example: 
 
 ```jsonc
 // .vscode/settings.json — safe agent defaults for a development repository.
@@ -63,23 +77,25 @@ Commit the block below as `.vscode/settings.json` in your repository so every co
 }
 ```
 
-Adjust the allow list to your stack, but keep the deny (`false`) entries: package scripts, cloud and cluster tools, database clients, and network fetches are executable authority and should always prompt. Some related settings (`chat.agent.sandbox.enabled`, `chat.tools.terminal.enableAutoApprove`, `chat.tools.eligibleForAutoApproval`, and the network-filter settings) are managed centrally by the organization; your repository settings layer on top.
+Adjust the allow list to your stack, but keep the deny (`false`) entries: package scripts, cloud and cluster tools, database clients and network fetches are executable authority and should always prompt. 
+
+Some related settings like `chat.agent.sandbox.enabled`, `chat.tools.terminal.enableAutoApprove`, `chat.tools.eligibleForAutoApproval` and the network-filter settings are managed centrally by the organization. When an organizational policy manages a setting, it takes precedence over repository settings.
 
 ## Suggested permission baseline
 
 | Permission class | Suggested treatment |
 |---|---|
-| Read and search files inside the current repository | Allow. |
-| Edit files inside the current branch or worktree | Allow, with diff review before commit. |
-| Run trusted formatters, linters, builds, and tests inside the sandbox | Allow once the repository and scripts are trusted. |
-| Download or install dependencies | Require approval; use approved registries. |
-| Access the network or fetch arbitrary URLs | Require approval; restrict destinations. |
-| Run package scripts from a new or untrusted repository | Require approval; scripts are executable code. |
-| Use `oc`, `kubectl`, `az`, `terraform`, database clients, or secrets clients | Require approval and a scoped non-production identity. |
-| Push a branch or open a pull request | Require review of the resulting diff and destination. |
-| Access files outside the workspace, keychains, credential caches, or SSH agents | Block by default. |
-| Escalate privileges, disable security controls, or use bypass mode | Block. |
-| Modify production, retrieve production secrets, merge, or deploy | Block in the local coding-agent environment. |
+| Read and search files in the current repository | Allow when the repository and information are trusted |
+| Edit files in the current branch or worktree | Allow, with diff review before commit |
+| Run trusted formatters, linters, builds and tests in the sandbox | Allow after reviewing and trusting the repository and  its scripts |
+| Download or install dependencies | Require approval and use approved registries |
+| Access the network or fetch arbitrary URLs | Require approval, unless access is explicitly allowed for an approved destination |
+| Run package scripts from a new or untrusted repository | Require approval because packaged scripts can execute code |
+| Use `oc`, `kubectl`, `az`, `terraform`, database clients, or secrets clients | Require approval and use a narrowly scoped non-production identity |
+| Push a branch or open a pull request | Review changes and destination before proceeding |
+| Access files outside the workspace, keychains, credential caches or SSH agents | Block by default |
+| Escalate privileges, disable security controls or use bypass mode | Block |
+| Modify production, retrieve production secrets, merge or deploy | Block in the local coding-agent environment |
 
 ## References
 

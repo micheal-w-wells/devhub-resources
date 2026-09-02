@@ -1,6 +1,6 @@
 ---
 description: Two complementary ways to limit an agent's blast radius (least-privilege identities and process sandboxing), plus how to protect workstation credentials.
-title: 'AI Tooling: Contain the Agent'
+title: 'AI tooling: Contain the Agent'
 resourceType: Documentation
 tags:
   - Developer Guide
@@ -11,125 +11,130 @@ personas:
 pageOnly: true
 ---
 
-## AI Tooling: Contain the Agent
+## AI tooling: Contain the agent
 
-!!! abstract "On this page"
-    How to limit an agent's blast radius with two layers: least-privilege identities (what it may do to real systems) and workstation sandboxing (what its process can touch). Read this before giving an agent access to a cluster, database, or cloud environment. For the short version, start with [AI Tooling Security Requirements](../AI-tooling-security-requirements.md).
+Learn how to limit an agent's potential impact, also known as its blasts radius, through two layers: least-privilege identities and workstation sandboxing. Least-privilege identities control what an agent may do in real systems. Workstation sandboxing controls what its process may access. Read this page before giving an agent access to a cluster, database or cloud environment. For a summary, see [AI tooling security requirements](../AI-tooling-security-requirements.md).
 
-Two different controls keep a coding agent from turning a mistake, or a prompt-injection payload, into an incident. They are complementary layers, and you want both:
+Two controls can reduce the chance that a coding agent turns a mistake or prompt injection into an incident. The controls complement each other, so use both:
 
-1. Least-privilege identity limits *what the agent is authorized to do* against real systems (the tokens, roles, and scopes it runs with). Even a perfectly sandboxed agent holding a production-admin token is dangerous.
-2. Sandboxing limits *what the agent's process can reach* on your workstation (files, network, credential stores). Even a narrowly scoped identity is dangerous if the agent can read every file and secret on your machine.
+1. **Least-privilege identity** limits what the agent is authorized to do against real systems through the tokens, roles and scopes it uses. Even a fully sandboxed agent can create serious risk if it holds a production administrator token
+2. **Sandboxing** limits what the agent's process may access on your workstation, including files, networks and credential stores. Even a narrowly scoped identity can create serious risk if the agent can read every file and secret on your computer
 
-This is guidance, not policy. It does not forbid `oc`, `kubectl`, `az`, database clients, or infrastructure tooling; those are part of the job. It explains what can go wrong and how to reduce the blast radius.
+This page provides guidance, not policy. It does not prohibit `oc`, `kubectl`, `az`, database clients or infrastructure tools. These tools are part of development work. You will be able to learn what can go wrong and how to reduce the blast radius.
 
 ## Part 1: Least-privilege identity
 
-### What can go wrong
+### Understand what can go wrong
 
-A coding agent runs commands on your behalf using whatever identity is active in your terminal. This is not a special power granted to the agent: a command it runs is an ordinary child process of your shell, so it inherits your environment variables (`KUBECONFIG`, `AWS_PROFILE`, tokens) and can read the same on-disk credential caches your user account can (`~/.kube/config`, `~/.azure`, `~/.aws`, OS keychains). An `oc`, `kubectl`, `az`, or `psql` command it runs therefore authenticates exactly as if you had typed it yourself. GitHub documents the same behaviour for Copilot CLI: it "can run any shell commands that you can run," just as if you were "running commands directly in your terminal." So when you paste an `oc login` command copied from the web console, or run the agent in a shell that already has your Azure or database sessions, the agent, and any command it decides to run, can do everything you can do.
+A coding agent runs commands on your behalf through the identity active in your terminal. The agent does not receive special powers. Each command it runs is a child process of your shell, so it may inherit environment variables such as `KUBECONFIG`, `AWS_PROFILE` and tokens. It may also access the same credential caches as your user account, including `~/.kube/config`, `~/.azure`, `~/.aws` and operating system keychains.
 
-An agent does not carry your organizational context. It may take a technically reasonable action that is operationally catastrophic:
+As a result, an `oc`, `kubectl`, `az` or `psql` command may authenticate as if you had entered it yourself. GitHub describes similar behaviour for Copilot CLI: It can run any shell command that you can run. If you paste an `oc login` command from the web console or run an agent in a shell with an active Azure or database session, the agent and its commands may receive the same access as you.
 
-- delete or scale down a running production workload it believes is unused;
-- run a destructive database statement (`DROP`, `DELETE`, `UPDATE` without a `WHERE`) while "cleaning up";
-- apply infrastructure changes directly to production instead of proposing them;
-- read a production secret or citizen data and echo it into a log, commit, or pull request; or
-- act on a poisoned instruction from a web page, issue, or tool output (prompt injection).
+An agent may lack important organizational context. It may take an action that appears technically reasonable but has serious operational consequences, such as:
 
-Many of these actions are irreversible and can affect citizens, not just your team. The risk is not the command name; it is the identity, environment, and scope the command runs with.
+- Deleting or scaling down a running production workload it believes is unused
+- Running a destructive database statement such as `DROP`, `DELETE`, `UPDATE` without a `WHERE` clause while cleaning up
+- Applying infrastructure changes directly to production instead of proposing them for review
+- Reading a production secret or citizen data and exposing it in a log, commit or pull request
+- Following a malicious instruction hidden in a web page, issue or tool output through prompt injection
+
+Some of these actions may be difficult or impossible to reverse and may affect citizens as well as your team. The risk comes from the identity, environment and scope in which the command runs, not from the command name alone.
 
 ### Reduce the blast radius
 
 | Instead of… | Do this… | Because… |
 |---|---|---|
-| Pasting your personal `oc login` token into the agent's shell | Use a namespace-scoped service-account token in a separate kubeconfig (below) | Your personal token carries all your access across every project and cluster you can reach. |
-| Running the agent with your default `az` / production session active | Use a development-scoped identity limited to a dev resource group | A broad Owner/Contributor or PIM-elevated session lets the agent change production. |
-| Letting the agent query a production database directly | Point it at a local or disposable dev database with synthetic data | Read-only mistakes still leak data; write mistakes are often unrecoverable. |
-| Having the agent deploy from your laptop | Have it open a pull request; deploy through protected CI/CD | Review and a workload identity keep a local mistake out of production. |
-| Handing the agent a credential so it can reach a service directly | Put the credential behind a purpose-built tool or MCP server that exposes only the operations the task needs | The raw secret never enters the agent's shell or the model's context, and the tool, not the agent, bounds what can be done. |
+| Pasting your personal `oc login` token into the agent's shell | Use a namespace-scoped service account token in a separate kubeconfig as described below | Your personal token carries all your permissions across every project and cluster |
+| Running the agent with your default `az` or production session is active | Use a development-scoped identity limited to a development resource group | An Owner, contributor or PIM-elevated session may allow the agent to change production resources |
+| Letting the agent query a production database directly | Point it at a local or disposable development database with synthetic data | Read operations can expose data and write operations that can cause irreversible damage |
+| Letting the agent deploy from your workstation | Ask it open a pull request, then deploy through protected CI/CD | Human review and a workload identity help keep a local mistakes out of production |
+| Giving the agent a credential so it can reach a service directly | Put the credential behind a purpose-built tool or MCP server that exposes only the operations the task needs | The raw secret stays out of the agent's shell and model context while the tool limits what the agent can do |
 
-Read-only is safer than write, but a read against production data can still expose information above Protected A. Prefer synthetic data first.
+Read-only access is safer than write access, but a reading production data can still expose information classified above Protected A. Use synthetic data wherever possible.
 
 ### Prefer no credential, then a mediated tool, then a scoped identity
 
-When an agent needs to affect a real system (a cluster, a database, a cloud environment), there is a clear order of preference. Work down it only as far as the task actually requires:
+When an agent needs to affect a real system such as a cluster, database or cloud environment, use the following options in order. Stop when an option meets the needs of the task:
 
-1. No standing credential (best). The agent proposes the change and a reviewed CI/CD pipeline with a short-lived [workload identity](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect) performs the privileged action. The agent holds nothing that can touch production.
-2. Mediated access through a scoped tool or MCP server. When the agent must interact with the service during development, put the service behind a purpose-built tool or MCP server that holds its *own* least-privilege credential (injected from a secrets store, never committed) and exposes only specific operations, for example a "run this parameterized read query" tool rather than a raw database shell. The agent invokes the tool; it never sees the underlying secret, and the tool bounds what can be done. This relocates and shapes the risk rather than removing it: a tool that simply exposes "run arbitrary SQL" hands back the same blast radius, and the tool or MCP server is itself a trusted intermediary that must be least-privileged and vetted (see [Extensions, skills, hooks, and MCP servers](extensions.md)).
-3. A scoped, short-lived, non-production identity (fallback). If the agent genuinely needs to run `oc`, `kubectl`, `az`, or a database client itself, give it a narrowly-scoped, time-boxed, non-production token in an isolated config, never your personal login or a production session. The OpenShift recipe below is an example of this tier.
+1. **No standing credential, which is preferred.** The agent proposes a change. A reviewed CI/CD pipeline uses a short-lived [workload identity](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect) to perform the privileged action. The agent holds no credential that can access production
+2. **Mediated access through a scoped tool or MCP server.** If the agent must interact with a service during development, place the service behind a purpose-built tool or MCP server. Give the tool its own least-privilege credential through a secrets store and never commit the credential. Expose only the operations required for the task. For example provide a tool that runs parameterized read queries instead of providing a raw database shell. The agent can call the tool but cannot see the underlying secret. This approach limits risk but does not remove it. A tool that allows arbitrary SQL creates the same blast radius as direct database access. Treat the tool or MCP server as a trusted intermediary that requires least-privilege access and security reviews. See [Extensions, skills, hooks, and MCP servers](extensions.md).
+3. **A scoped, short-lived, non-production identity as fallback.** If the agent must run `oc`, `kubectl`, `az`, or a database client, give it a narrowly-scoped and time-boxed non-production token in an isolated configuration. Never use your personal login or a production session. The OpenShift example below shows this approach
 
-Giving the agent a token is never the *first* choice; it is the last resort once options 1 and 2 do not fit. When you do it, scope it as tightly as the example below.
+Giving an agent a token should never be the *first* choice. Use one only when options 1 and 2 do not meet the needs of the task and scope as narrowly as possible.
 
-### OpenShift: if the agent needs cluster access, scope the token tightly
+### OpenShift: If the agent needs cluster access, scope the token tightly
 
-When a developer copies an `oc login` command from the OpenShift web console, it uses their personal OAuth token (`oc whoami --show-token`), which carries every permission that developer has, in every namespace and cluster they can reach. Pasting that into an agent's terminal hands all of it over.
+When you copy an `oc login` command from the OpenShift web console, it uses your personal OAuth token (`oc whoami --show-token`). The token carries every permission that your account has, in every namespace and cluster that issued it. Pasting the command into an agent's terminal gives the agent those permissions.
 
-Instead, mint a short-lived token for a dedicated service account scoped to a single development namespace, and give the agent its own kubeconfig:
+Instead, create a short-lived token for a dedicated service account. Limit the service account to one single development namespace and give the agent a separate kubeconfig:
 
 ```sh
-# 1. Create a dedicated service account in YOUR development namespace.
+# 1. Create a dedicated service account in your development namespace
 oc create serviceaccount agent-dev -n <your-dev-namespace>
 
-# 2. Grant it only what the task needs, scoped to that one namespace.
+# 2. Grant only the access required for the task in that namespace
 #    Use "view" for read-only; "edit" to let it change objects in this namespace only.
 oc create rolebinding agent-dev-binding \
   --clusterrole=edit \
   --serviceaccount=<your-dev-namespace>:agent-dev \
   -n <your-dev-namespace>
 
-# 3. Mint a short-lived token (OpenShift 4.11+ / Kubernetes 1.24+).
+# 3. Create a short-lived token (OpenShift 4.11+ / Kubernetes 1.24+)
 oc create token agent-dev -n <your-dev-namespace> --duration=1h
 
-# 4. Put it in a SEPARATE kubeconfig — never the agent's copy of ~/.kube/config.
+# 4. Store it in a separate kubeconfig instead of your personal ~/.kube/config
 KUBECONFIG=~/.kube/agent-dev.config oc login \
   --token=<token-from-step-3> \
   --server=https://api.<cluster-domain>:6443
 ```
 
-Then run the agent with `KUBECONFIG=~/.kube/agent-dev.config`, and confirm the scope before you start:
+Then run the agent with `KUBECONFIG=~/.kube/agent-dev.config`. Before you start, confirm what the service account can do:
 
 ```sh
 oc auth can-i --list --kubeconfig ~/.kube/agent-dev.config
 ```
 
-A `RoleBinding` (not a `ClusterRoleBinding`) keeps even the built-in `edit`/`view` roles limited to the one namespace. Red Hat's [OpenShift RBAC guidance](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/using-rbac) explains project-scoped versus cluster-wide roles. Keep your personal `~/.kube/config`, production contexts, and cluster-admin credentials out of the agent environment.
+A `RoleBinding` (not a `ClusterRoleBinding`) limits the built-in `edit`/`view` role to one namespace. Red Hat's [OpenShift RBAC guidance](https://docs.redhat.com/en/documentation/openshift_container_platform/4.20/html/authentication_and_authorization/using-rbac) explains project-scoped and cluster-wide roles. Keep your personal `~/.kube/config`, production contexts and cluster-admin credentials out of the agent's environment.
 
-### Azure: use a development-scoped identity
+### Azure: Use a development-scoped identity
 
-Give the agent an identity limited to the relevant development resource group, not subscription-wide Owner, User Access Administrator, a broad Contributor assignment, an active PIM elevation, or cached credentials that also reach production. Microsoft's [Azure RBAC best practices](https://learn.microsoft.com/en-us/azure/role-based-access-control/best-practices) recommend least privilege and narrow scopes, and [Privileged Identity Management](https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure) keeps privileged access just-in-time. For deployment, prefer a reviewed pull request and a protected workflow using a workload identity (see [GitHub Actions authentication to Azure with OpenID Connect](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect)).
+Give the agent an identity limited to the relevant development resource group. Do not give it subscription-wide Owner or User Access Administrator, a broad Contributor assignment, active Privileged Identity Management (PIM) elevation or cached credentials that can access production. 
 
-If the agent must use `az` directly in development, scope a role assignment to a single development resource group rather than reusing your own session:
+Microsoft's [Azure RBAC best practices](https://learn.microsoft.com/en-us/azure/role-based-access-control/best-practices) recommend least privilege and narrow scopes. [Privileged Identity Management](https://learn.microsoft.com/en-us/entra/id-governance/privileged-identity-management/pim-configure) provides just-in-time privileged access. For deployments, use a reviewed pull request and a protected workflow using a workload identity. See [GitHub Actions authentication to Azure with OpenID Connect](https://learn.microsoft.com/en-us/azure/developer/github/connect-from-azure-openid-connect).
+
+If the agent must use `az` directly in development, assign a role for one development resource group instead of reusing your session:
 
 ```sh
-# Grant a dedicated dev identity Contributor on ONE resource group (not the subscription).
+# Grant a dedicated development identity Contributor access to one resource group (not the subscription).
 az role assignment create \
   --assignee <agent-dev-identity-id> \
   --role Contributor \
   --scope /subscriptions/<sub-id>/resourceGroups/<your-dev-rg>
 ```
 
-Prefer a workload identity and CI/CD for anything that reaches a shared or production environment; a standing service-principal secret sitting on your workstation is itself a credential you then have to protect.
+Use a workload identity and CI/CD for shared or production environments. A service-principal secret stored on your workstation is another credential that you must protect.
 
-### Production databases
+### Protect production databases
 
-Normal agent work should use a local database, a disposable dev database, synthetic test data, or a minimal sanitized reproduction. If you are working a real incident, an agent can help you *draft* a query or reason about sanitized results, but run it yourself against a read-only, narrowly scoped connection, and have a second person review anything that touches production. Do not let the agent hold standing production access, write production records, alter schemas, or execute unreviewed remediation.
+For routine development, use a local database, a disposable development database, synthetic test data or minimal sanitized reproduction. If you are working a real incident, an agent may help you draft a query or assess sanitized results. However, run the query yourself against a read-only and narrowly scoped connection. Ask a second person to review anything that affects production. 
+
+Do not give the agent standing production access or allow it to write production records, alter schemas or execute unreviewed remediation.
 
 ## Part 2: Sandboxing and workstation credentials
 
-### Why this matters
+### Understand why sandboxing matters
 
-By default, a coding agent runs as you. Without a sandbox, the agent, and any terminal command it runs, can read anything your user account can read and use any credential your account can use. In practice that means it could:
+A local coding agent may run with your user account's permissions. Without a sandbox, the agent and any terminal commands it runs may read anything your account can read and use any credential your account can use. For example, it could:
 
-- read files anywhere on your workstation, including documents classified above Protected A that have nothing to do with the repository;
-- use your credential stores (`~/.ssh`, `~/.kube`, `~/.azure`, OS keychains, browser sessions) to act as you against real systems; and
-- be steered into doing any of the above by a prompt-injection payload hidden in a web page, issue, dependency, or tool result.
+- Read files anywhere on your workstation, including unrelated documents classified above Protected A 
+- Use your credential stores such as `~/.ssh`, `~/.kube`, `~/.azure`, OS keychains and browser sessions to act as you against real systems
+- Follow a prompt-injection payload hidden in a web page, issue, dependency or tool result and perform either of these actions
 
-Sandboxing shrinks that reach so a mistake, or a malicious instruction, stays contained. It also reduces approval prompts, because commands that run inside the sandbox are auto-approved.
+Sandboxing limits this access so a mistake or a malicious instructions are more likely to stay contained. Depending on the tool and its configuration, sandboxed commands may also require fewer approval prompts.
 
 ### Sandboxing in the IDE
 
-VS Code can run agent terminal commands inside an OS-level sandbox that restricts file-system and network access (macOS and Linux, including WSL2):
+Visual Studio Code (VS Code) can run agent terminal commands in an operating system-level sandbox that limits file system and network access on supported operating systems, including macOS, Linux and Windows Subsystem for Linux 2 (WSL2):
 
 ```jsonc
 {
@@ -148,36 +153,43 @@ VS Code can run agent terminal commands inside an OS-level sandbox that restrict
 }
 ```
 
-By default, sandboxed commands can write only to the working directory, reads from your home directory are denied, and outbound network access is blocked unless you allow specific domains. See [Manage approvals and permissions](https://code.visualstudio.com/docs/agents/approvals) and [Agent sandboxing](https://code.visualstudio.com/docs/agents/concepts/trust-and-safety#_agent-sandboxing). Some of these settings are managed centrally by the organization.
+By default, the sandbox allows commands to write only to the working directory, denies reads from your home directory and blocks outbound network access unless you allow specific domains. See [manage approvals and permissions](https://code.visualstudio.com/docs/agents/approvals) and [agent sandboxing](https://code.visualstudio.com/docs/agents/concepts/trust-and-safety#_agent-sandboxing). Your organization manages some of these settings centrally.
 
 ### Sandboxing in the CLI
 
-Command-line agents such as GitHub Copilot CLI run terminal commands too, so they need the same containment. GitHub documents [local sandbox configuration](https://docs.github.com/en/copilot/how-tos/cloud-and-local-sandboxes/configuring-local-sandbox-settings) for restricting file-system and network access. When a Copilot CLI session uses the VS Code agent terminal integration, the VS Code sandbox settings above apply to it as well.
+Command-line agents such as GitHub Copilot CLI run terminal commands, so apply the same containment principles. GitHub provides instructions for configuring [local sandbox configuration](https://docs.github.com/en/copilot/how-tos/cloud-and-local-sandboxes/configuring-local-sandbox-settings) to limit file-system and network access. If a Copilot CLI session uses the VS Code agent terminal integration, confirm whether the VS Code sandbox settings above apply to that session before relying on them.
 
 ### Sandboxing is defence in depth, not a complete boundary
 
-Use it, but do not treat it as the only control:
+Use sandboxing as one control, not as a complete security boundary:
 
-- some sandboxing features are in preview and still evolving;
-- a sandbox may cover only particular tools or terminal processes;
-- extensions, MCP servers, setup scripts, container mounts, and forwarded credentials can create separate paths; and
-- a sandbox cannot compensate for an identity that already has excessive permissions (Part 1).
+- Some sandboxing features are in preview and continue to evolve
+- A sandbox may apply only to specific tools or terminal processes
+- Extensions, MCP servers, setup scripts, container mounts and forwarded credentials may provide other paths to sensitive resources
+- A sandbox cannot compensate for an identity with excessive permissions as explained in: [Part 1: Least-privilege identity](#part-1-least-privilege-identity).
 
-### Protect your credential stores
+### Protect credential stores
 
-Whether or not a sandbox is active, keep these out of the agent's reach: `~/.ssh`, `~/.kube`, `~/.azure`, and cloud credential caches; OS keychains and password-manager sockets; browser profiles and saved sessions; and shell history containing secrets.
+Whether or not a sandbox is active, keep the following resources out of the agent's reach:
 
-Practical habits:
+- SSH Keys and configuration in  `~/.ssh`
+- Kubernetes configuration in `~/.kube`
+- Azure confirmation in `~/.azure` and cloud credential caches
+- OS keychains and password manager sockets
+- Browser profiles and saved sessions
+- Shell history that contain secrets
 
-- Use separate, non-production contexts (a dedicated `KUBECONFIG` or isolated Azure CLI config), as in Part 1.
-- Keep privileged work in a separate session. Do not activate PIM or log into a production cluster and then keep working in an agent session that can read the same credential cache.
+Follow these practices:
+
+- Use separate non-production contexts, such as a dedicated `KUBECONFIG` or isolated Azure CLI configuration, as described in [Part 1: Least-privilege identify](#part-1-least-privilege-identity)
+- Keep privileged work in a separate session. Do not activate PIM or log into a production cluster and continue using an agent session that can read the same credential cache
 - Reset disposable environments. Rebuild or discard an agent workspace after installing dependencies or evaluating an unfamiliar repository.
 
-For higher-risk work such as evaluating an untrusted repository, a dev container, disposable VM, or remote development environment with no host credential forwarding adds a stronger boundary. This is an option for risky tasks, not a requirement for everyday development. Dev containers are not automatically a credential boundary: VS Code can forward Git credentials and SSH keys into a container, so configure that deliberately. See [Developing inside a container](https://code.visualstudio.com/docs/devcontainers/containers).
+For higher-risk work, such as evaluating an untrusted repository, use a dev container, disposable VM or remote development environment that does not forward host credentials. These options create a stronger security boundary. Use them for risky tasks, but you do not need them for everyday development. Keep in mind that dev containers do not automatically create a credential boundary. VS Code can forward Git credentials and SSH keys into a container, so configure credential forwarding deliberately. For more information see [developing inside a container](https://code.visualstudio.com/docs/devcontainers/containers).
 
-### Cloud agents
+### Secure cloud agents
 
-A cloud coding agent does not inherit your local credential cache, which removes one class of risk. Its boundary is instead the repository, configured secrets, tools, MCP servers, network access, branch protections, and workflow permissions. Do not store production credentials as cloud-agent secrets, keep required reviews and firewall protections enabled, and treat the agent's pull request as an untrusted proposed change until CI and an independent human review are complete.
+A cloud coding agent does not inherit your local credential cache, which removes one source of risk. Its access depends on the repository, configured secrets, tools, MCP servers, network access, branch protection rules and workflow permissions. Do not store production credentials as cloud agent secrets. Keep required reviews and firewall protections enabled. Treat the agent's pull request as an untrusted proposed change until continuous integration (CI) checks pass and an independent person reviews it.
 
 ## References
 

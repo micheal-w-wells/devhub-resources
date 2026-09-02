@@ -1,6 +1,6 @@
 ---
 description: How to review AI-assisted dependencies, stale docs and versions, tests, security requirements, and documentation, and how to require human review for sensitive code.
-title: 'AI Tooling: Reviewing AI-Assisted Work'
+title: 'AI tooling: Reviewing AI-assisted work'
 resourceType: Documentation
 tags:
   - Developer Guide
@@ -11,84 +11,193 @@ personas:
 pageOnly: true
 ---
 
-## AI Tooling: Reviewing AI-Assisted Work
+## AI tooling: Reviewing AI-assisted work
 
-!!! abstract "On this page"
-    How to make the important review checks automatic when an agent writes most of the code: dependencies and licences, stale docs and versions, tests, concrete security requirements, and required human review for sensitive changes. For the short version, start with [AI Tooling Security Requirements](../AI-tooling-security-requirements.md).
+Learn how to automate important checks when an agent generates code, including dependency and licence checks, documentation updates, testing, security requirements and human review for sensitive changes. For a shorter overview, start with [AI tooling security requirements](../AI-tooling-security-requirements.md).
 
-When an agent writes most of the code, you will not read every line as closely as you would your own. The aim of this page is to make the important checks automatic wherever possible, so security does not depend on a developer manually crawling every diff, test, and dependency. Most of these controls ship ready to adopt in the [AI Security Quickstart](https://github.com/bcgov-c/AI-security-quickstart).
+When an agent generates code, automated checks can help developers identify problems without relying only on manual review.
 
-## Dependencies and licences: use a deterministic check
+Use automated controls where possible to check dependencies, test, security requirements and documentation. Human review is still required, particularly for sensitive or high-risk changes.
 
-AI tools can suggest outdated, unnecessary, nonexistent, malicious, or licence-incompatible packages. Rather than trusting the model's judgement, catch problems with a deterministic scan. Two complementary approaches work well together:
+Many of these controls are available through the [AI Security Quickstart](https://github.com/bcgov-c/AI-security-quickstart).
 
-1. A scoped check when a dependency is added. When the agent installs a new package (`npm install`, `pip install`, `go get`, etc.), run a deterministic scan focused on what changed:
+## Check dependencies and licences
 
-- A hook on the install/tool call can run the ecosystem's audit (`npm audit`, `pip-audit`, `osv-scanner`, `govulncheck`) against the new package and fail loudly if it is vulnerable.
-- The `dependency-vulnerability-check` skill gives the agent a repeatable "is this package safe" procedure (exists in the registry, maintained, not deprecated, no known CVEs, pinned) and tells it to fix the problem in the same change rather than suppress the finding.
-- The `dependency-review` workflow fails a pull request that adds a dependency with a known vulnerability or a disallowed licence: the authoritative server-side gate.
-- Dependabot opens fix and version-bump pull requests for known CVEs, and the `dependency-license-checker` hook flags new copyleft/restrictive licences before they are committed.
+AI tools can suggest packages that are outdated, unnecessary, nonexistent, malicious or incompatible with your licence requirements. 
 
-2. An always-on scanner in the IDE. Even easier than a per-install step: run a linter or software-composition-analysis extension continuously so it publishes findings to the editor's Problems panel. Agents can read IDE diagnostics, so a flagged vulnerable or deprecated package appears in the agent's context and it can course-correct (pick a maintained version or a different package) without a separate command. Treat this as a convenience that shortens the loop, not the gate: keep the pull-request check as the authoritative backstop, and instruct the agent (in `AGENTS.md`) to check and resolve diagnostics before reporting done.
+Do not trust the model to determine whether a dependency is safe. Catch problems with a deterministic scan. Use automated, repeatable checks that produce the same result when given the same input.
 
-When you do review by hand, confirm the package exists and is correctly named, check maintenance activity and advisories, prefer an approved existing dependency, pin the version, and review install/lifecycle scripts, in the pull request that introduces it, not at release.
+You can check for dependencies at different stages.
 
-## Guard against stale knowledge (docs and versions)
+### Check dependencies when they are added
 
-A model's built-in knowledge has a training cut-off, so an agent left to its own memory will happily write code against deprecated APIs, removed functions, superseded best practices, or an old major version of a library, and it will look confident doing it. This is one of the most common sources of subtly wrong AI-generated code.
+When an agent adds a dependency using a command such as `npm install`, `pip install`, `go get`, run a deterministic scan focused on what changed. 
 
-Reduce it by giving the agent current, version-specific information instead of relying on recall:
+For example: 
 
-- Feed it live documentation. Tools such as [Context7](https://github.com/upstash/context7) fetch up-to-date, version-pinned library docs into the agent's context so generated code matches the version you actually use. Context7 is itself an MCP server, so vet and pin it like any other (see [Extensions, skills, hooks, and MCP servers](extensions.md)).
-- Point at official docs and your lockfile. Tell the agent the exact versions in use (from the lockfile) and link the relevant official documentation, rather than letting it assume "latest".
-- Verify version-sensitive code. For framework upgrades, new libraries, or fast-moving SDKs, confirm the generated calls exist in the installed version; build, type-check, and run tests catch much of this deterministically.
+- A hook on the install/tool call can run the ecosystem's audit such as `npm audit`, `pip-audit`, `osv-scanner` and `govulncheck` against the new package and fail loudly if it is vulnerable
+- Use the `dependency-vulnerability-check` skill to check whether the package exists, is maintained, is deprecated, has known CVEs and uses an appropriate pinned version
+- Use the `dependency-review`workflow to prevent a pull request from merging when it introduces a dependency with a known vulnerability or disallowed licence: The authoritative server-side gate
+- Use Dependabot to propose updates for dependencies with known vulnerabilities and use the fix and version-bump pull requests for known CVEs, and the `dependency-license-checker` hook to flag newly added copyleft or restrictive licences before they are committed
 
-## Agent-written tests: treat them as evidence, not proof
+### Use continuous dependency scanning 
 
-Agent-generated tests often mirror the implementation instead of the requirement, over-use mocks, cover only happy paths, skip authorization and tenant boundaries, or assert that code merely runs. A green suite is not automatically a trustworthy one.
+You can also use a linter or software composition analysis tool or an always-on scanner in the IDE to identify dependency problems while you work.  
 
-You are unlikely to read every line of a generated test suite, so lean on a focused review pass rather than manual line-by-line reading:
+These tools can publish findings to the editor's Problems panel. Agents that can then read IDE diagnostics and may use those findings to identify vulnerable or deprecated packages. As a result it course-corrects and pick a maintained version or a different package without a separate command.
 
-- Run a reusable security/quality review such as a `/security-review` prompt or a `secure-change-review` skill over the diff, including tests.
-- Spot-check that each material test maps to a requirement or prior defect, would fail if the behaviour regressed, and covers invalid, boundary, failure, and authorization cases.
-- Confirm tests contain no real production or personal data and are deterministic.
+Treat IDE scanning as an early warning rather than the final control. Keep pull request checks as the authoritative backstop and instruct the agent through `AGENTS.md` to review and resolve relevant diagnostics before reporting that the task is complete.
 
-A dedicated test-review skill or prompt is a good addition to your repository's approved component set. Coverage percentages can show unexecuted code but are not a substitute for risk-based test design.
+When reviewing dependencies manually:
 
-### Goal-driven testing as a complement
+- Confirm that the package exists and is correctly named
+- Check its maintenance activity and security advisories
+- Prefer an existing approved dependency when one meets the requirement
+- Pin the version when required
+- Review installation and lifecycle scripts
 
-An emerging approach is goal-driven (scenario) testing: instead of enumerating unit, integration, and end-to-end assertions, you give an agent a plain-language goal, for example *"Create an account and get a fishing licence"*, and it drives the running application to accomplish it, reporting where it got stuck. It is good at exploratory testing and at surfacing integration and usability gaps that scripted tests miss.
+Complete these checks in the pull request that introduces the dependency rather than waiting until release.
 
-Because the agent explores a different path each run, goal-driven testing is non-deterministic: a pass or failure is not perfectly repeatable, and it can produce false positives and negatives. Use it to enhance, not replace, your deterministic suites:
+## Check current documentation and versions
 
-- Keep deterministic unit/integration/e2e tests as the merge and regression gate; they must be repeatable to be trustworthy in CI.
-- Use goal-driven runs as exploratory testing during development and before release, and turn any real defect it finds into a deterministic regression test.
-- Never let a non-deterministic result be the only thing standing between a change and production.
+A model's built-in knowledge has a training cut-off. As a result, an agent left to its own memory will happily write code against deprecated APIs, removed functions, superseded best practices, or an old major version of a library, and it will look confident doing it. This is one of the most common sources of subtly wrong AI-generated code.
 
-!!! warning "Goal-driven testing is never a merge gate"
-    Because its results are not repeatable, a goal-driven run must not gate a merge or a release on its own. Use it locally to explore, then capture any real defect it finds as a deterministic regression test that *can* run in CI.
+Give the agent current, version-specific information rather than relying only on its built-in knowledge.
 
-## Security requirements: make them concrete
+### Provide current documentation 
 
-"Follow security best practices" is too vague for a developer or an agent. Translate the requirements that apply to your system into acceptance criteria, agent instructions, tests, and CI checks. Path-scoped instructions (for example a `security-and-owasp.instructions.md` that loads only for source files) put secure-coding mechanics in front of the agent exactly when it edits code, on top of an always-on baseline in `AGENTS.md`.
+Tools such as [Context7](https://github.com/upstash/context7) fetch up-to-date, version-pinned library docs into the agent's context so generated code matches the version you actually use. 
 
-At minimum, review changes that affect authentication and sessions; authorization, object-level access, and tenant separation; input validation and output handling; secrets and credentials; logging without sensitive-data disclosure; dependency and build-pipeline integrity; encryption and transport; personal-information handling; retention and deletion; administrative and deployment access; and failure handling.
+Context7 is an MCP server, so review it and pin it before adoption like any other MCP server. 
 
-## Documentation: keep it current without extra effort
+See [Extensions, skills, hooks, and MCP servers](extensions.md).
 
-Documentation only stays current when it is part of the change, not a follow-up chore. Streamline it with agent-facing automation:
+### Provide versions your application uses
 
-- A docs-currency rule in `AGENTS.md` (*no merged change may leave the documentation less true than the code*) so the agent updates docs in the same pull request.
-- A `docs-update` skill that maps each kind of change (behaviour, API, config, architecture, data handling, dependencies) to the docs that must change.
-- A pull request template with Docs / Architecture / Compliance prompts, and a `docs-check` workflow that catches broken links and documentation drift.
+Use your lockfile or other dependency configurations to identify the exact versions in the repository.
 
-Treat AI-generated documentation and diagrams as proposed content and validate them against the implemented system.
+Provide the relevant official documentation for those versions rather than allowing the agent to assume that the project uses the latest release. 
+
+### Verify version-sensitive code 
+
+Check generated code carefully when it involves version-sensitive code:
+
+- Framework upgrades
+- New libraries
+- Fast-moving SDKs
+
+Confirm that generated calls, functions and configuration options  exist in the version installed by your application.
+
+Builds, type-checking and run tests can identify many version-related problems.
+
+## Treat agent-written tests as evidence, not proof
+
+Agent-generated tests may reproduce the assumptions made by the implementation rather than test the actual requirement.
+
+They may also:
+
+- Rely too heavily on mocks
+- Test only successful scenarios
+- Miss authorization or tenant-boundary cases
+- Verify that code runs without confirming that it behaves correctly
+
+A passing test suite does not necessarily mean the implementation is correct.
+
+Use a focused review of generated tests rather than relying only on the test results.
+
+For example: 
+
+- Run a reusable security and/or quality review such as a `/security-review` prompt or a `secure-change-review` skill over the the code changes and tests
+- Check that important tests map to a requirement or previous defect
+- Confirm that a test would fail if the expected behaviour stopped working
+-  Include invalid input, boundary conditions, failure scenarios and authorization cases where relevant
+- Confirm that tests do not contain real production or personal information
+Confirm that tests produce consistent, repeatable results
+
+Consider adding an approved test-review skill or prompt to the repository.
+
+Code coverage can help identify code that tests do not execute, but coverage percentages do not replace risk-based test design.
+
+### Use goal-driven testing as a complement
+
+Goal-driven is a scenario testing that gives an agent an outcome to achieve in plain language instead of a predefined set of test steps.
+
+For example: 
+
+"Create an account and get a fishing license" 
+
+The agent interacts with the running application and reports whether it can complete the goal and where it also encounters problems. It is good at exploratory testing and it can identify integration and usability gaps that scripted tests may miss.
+
+However, goal-drive testing is non deterministic. The agent may follow a different path each time, so results may not be fully repeatable. It can also produce false positives or false negatives.
+
+Use goal-driven testing to complement deterministic testing, not replace it.
+
+- Keep deterministic unit/integration/e2e tests as the merge and regression gate; they must be repeatable to be trustworthy in CI
+- Use goal-driven runs for exploratory testing during development and before release, and turn any real defect it finds into a deterministic regression test
+- Do not rely on a non-deterministic test to be the only control before a chance reaches production
+
+!!! warning "Goal-driven testing is not a merge gate"
+    Do not use a goal-driven test as the only requirement for merging or releasing a change because its results may not be repeatable.
+    
+    Use it for exploratory testing and create a deterministic regression test for any valid defect it identifies in CI.
+
+## Make security requirements specific 
+
+Instructions like "follow security best practices" are too broad to guide either a developer or an agent.
+
+Translate the requirements that apply to your system into:
+
+- Acceptance criteria 
+- Agent instructions
+- Automated tests
+- CI checks 
+
+You can also use path-scoped instructions. For example a `security-and-owasp.instructions.md` file can provide secure coding requirements when an agent works with particular source files while `AGENTS.md` provides the repository's general requirements.
+
+At minimum, review changes that affect:
+
+- Authentication and sessions
+- Authorization, object-level access and tenant separation
+- Input validation and output handling 
+- Secrets and credentials
+- Logging without sensitive-data disclosure 
+- Dependency and build-pipeline integrity 
+- Encryption and data in transit 
+- Personal-information handling 
+- Data retention and deletion
+- Administrative and deployment access
+- Error and failure handling
+
+## Keep documentation current
+
+Documentation should be part of the change rather than a separate task completed later.
+
+You can use agent-facing instructions and automation to help keep documentation current. 
+
+For example: 
+
+- Add a documentation required or docs-currency rule in `AGENTS.md` so changes to functionality include the required documentation updates
+- Use a `docs-update` skill that identifies which documentation may need updating when behaviour, APIs, configuration, architecture, data handling or dependencies change
+- Add documentation and architecture prompt to the pull request template
+- Use a `docs-check` workflow to identify broken links or other documentation problems
+
+Treat AI-generated documentation and diagrams as proposed content and always validate them against the implemented system before publishing and merging them.
 
 ## Require human review for sensitive code
 
-Some code should never merge on an agent's say-so, no matter how confident it looks: authentication and authorization, cryptography, payment or financial logic, privacy-sensitive data flows, infrastructure, and deployment configuration.
+Some changes require human review because errors could have a significant security, privacy, financial or operational consequences.
 
-Define those sensitive capabilities and files for your repository, then enforce human review in CI/CD, not in the agent's instructions. A `CODEOWNERS` file plus a branch-protection ruleset that requires code-owner approval is a server-side control: it applies when the pull request is opened, so the agent is not aware of it while it works and cannot be talked into bypassing it. This is stronger than asking the agent nicely to request review.
+Examples include changes to: 
+
+- Authentication and authorization
+- Cryptography
+- Payment or financial logic
+- Privacy-sensitive data flows
+- Infrastructure and deployment configuration
+
+Identify the sensitive capabilities and files in your repository and enforce the review requirement through CI/CD and repository controls rather than relying only on the agent instructions.
+
+For example, you can combine a `CODEOWNERS` file with a branch-protection ruleset that requires code-owner approval.
 
 ```text
 # .github/CODEOWNERS — require the security team to review sensitive routes.
@@ -97,12 +206,33 @@ Define those sensitive capabilities and files for your repository, then enforce 
 /infra/              @your-org/platform-reviewers
 /.github/workflows/  @your-org/platform-reviewers
 ```
+These server-side controls apply to pull requests independently of the agent's instructions and help prevent sensitive changes from being merged without the required human review.
 
-## Ship AI-assisted changes through normal controls
+## Use normal controls for AI-assisted changes
 
-AI-assisted code follows the same engineering controls as human-authored code. Before merge: inspect the full diff, confirm it meets the specification, review dependencies and licences, run required tests and security checks, verify documentation impacts, inspect generated files and configuration, and confirm no credentials or production data were introduced.
+Apply the same engineering controls to AI-assisted code that you apply to human-authored code.
 
-AI code review, security-review agents, and auto-fixers can add a useful opinion, but they must not count as the required human approval, approve their own change, bypass required checks, merge automatically, or deploy to production. An auto-fixer should propose a patch or draft pull request for review.
+Before merging a change:
+
+- Review the complete diff
+- Confirm that the implementation meets the requirements
+- Review new or changed dependencies and licences
+- Run the required tests and security checks
+- Confirm whether documentation needs to change
+- Review generated files and configuration
+- Confirm that the change does not introduce credentials or production data
+
+AI code-review tools, security-review agents and automated fixes can provide an additional review, but they do not replace required human approval.
+
+Do not allow an AI reviewer or automated fixer to:
+
+- Approve its own changes
+- Replace required human approval
+- Bypass required checks
+- Merge changes automatically
+- Deploy directly to production
+
+An automated fixer should suggest a patch or draft pull request for human review.
 
 ## References
 
