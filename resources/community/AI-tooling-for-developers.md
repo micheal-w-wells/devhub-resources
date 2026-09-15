@@ -42,7 +42,9 @@ After you review the mandatory reading and confirm your need for AI tools with y
 - Submit a ticket ___here___ to request access to GitHub Copilot
 - For information about accessing AI Services Hub, see ___this___ 
 -->
-- Github Copilot is currently only accessible for individuals part of the pilot cohort, but is tentatively planned for broader rollout later in 2026 pending approval.  Further communications to this will be made available on the Community Developer Teams as well via this page and a future email from the DevX team.
+- GitHub Copilot is currently available only to individuals in the pilot cohort. A broader rollout is tentatively planned for later in 2026, pending approval.
+ 
+We will share further updates in the Developer Community on Microsoft Teams, on this page and in a future email from the DevX team.
 - Follow the setup instructions provided by each tool vendor (for example, the GitHub Copilot documentation)
 
 ### Help available
